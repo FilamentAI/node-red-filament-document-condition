@@ -82,8 +82,9 @@
             
             try { 
                 const workspace = window.location.href.split('/workspaces/')[1].split('/')[0];
-                const isLocal = (window.location.href.indexOf("http://localhost") === 0);
-                const backendBaseURL = isLocal ? "http://localhost:8080/core/rest" : "http://rest." + window.location.hostname + "/core/rest";
+                const isLocal = (window.location.href.indexOf("localhost") != -1);
+                const backendBaseURL = isLocal ? window.location.protocol + "//" + window.location.host + "/core/rest" 
+                                                : window.location.protocol + "//rest." + window.location.hostname + "/core/rest";
             
                 publishedModelURL = `${backendBaseURL}/workspaces/${workspace}/trained-models?published=true`;
             } catch ( error ) { 
