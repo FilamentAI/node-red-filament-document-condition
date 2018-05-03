@@ -1,0 +1,312 @@
+<script type="text/javascript">
+    var operators = [
+        {v:"exists",t:"exists",kind:'V'},
+        {v:"eq",t:"==",kind:'V'},
+        {v:"neq",t:"!=",kind:'V'},
+        {v:"cont",t:"switch.rules.cont",kind:'V'},
+        {v:"regex",t:"switch.rules.regex",kind:'V'},
+        {v:"else",t:"switch.rules.else",kind:'O'}
+    ];
+    
+    RED.nodes.registerType('condition',{
+        category: 'function',
+        color: '#ac5ba4',
+        defaults: {
+            name: {value:""},
+            matchany : { value : undefined, required : true, validate : function (v) { 
+                return v != null;
+            } },
+            model : { value : undefined, required: true, validate : function (v) { 
+                return v != null && v != "";
+            } }, // the current model to get labels from
+            
+            rules: { 
+                value: [
+                    {
+                        t:"exists", 
+                        v:""
+                    }
+                ]
+            },
+            outputs: {
+                value:1
+            }
+        },
+        inputs:1,
+        outputs:1,
+        outputLabels: function(i) {
+            return this.rules[i].lv;
+        },
+        icon: "filament.png",
+        label: function() {
+            return this.name||"condition";
+        },
+        oneditprepare: function() {
+            var node = this;
+            
+            node.rulesBackup = JSON.parse(JSON.stringify(node.rules));
+            
+            var modelsField = $("#node-input-model");
+            modelsField.empty();
+            
+            modelsField.change( function () { 
+                if ( node.model != modelsField.val() && modelsField.val() != null ) { 
+                    node.rules = [ // reset the rules...
+                            {
+                                t:"exists", 
+                                v:"", 
+                                vt:"str"
+                            }
+                        ];
+                } else { 
+                    node.rules = JSON.parse(JSON.stringify(node.rulesBackup));
+                }
+                
+                if ( node.models != null ) { 
+                    for ( var i = 0; i < node.models.length; i++ ) { 
+                        if ( node.models[i].id == modelsField.val() ) { 
+                            node.labels = node.models[i].labels;
+                            break;
+                        }
+                    }   
+                }
+                
+                $("#node-input-rule-container").editableList('empty');
+                for (var i=0;i<node.rules.length;i++) {
+                    var rule = node.rules[i];
+                    $("#node-input-rule-container").editableList('addItem',{r:rule,i:i});
+                }
+            } );
+            
+            var publishedModelURL = "";
+            
+            try { 
+                const workspace = window.location.href.split('/workspaces/')[1].split('/')[0];
+                const isLocal = (window.location.href.indexOf("http://localhost") === 0);
+                const backendBaseURL = isLocal ? "http://localhost:8080/core/rest" : "http://rest." + window.location.hostname + "/core/rest";
+            
+                publishedModelURL = `${backendBaseURL}/workspaces/${workspace}/trained-models?published=true`;
+            } catch ( error ) { 
+                publishedModelURL = "http://rest.staging.engine.filament.ai/core/rest/workspaces/18/trained-models?published=true";
+            }
+            
+            $.ajax({
+                url: publishedModelURL,
+                headers: { Authorization: localStorage.getItem('token') },
+                type: "GET",
+                dataType: 'json',
+                success: function(resp, textStatus, xhr) {
+                    if (xhr.status == 200) {
+                        node.models = resp;
+                        
+                        modelsField.append($("<option></option>")); // blank...
+                        for (var d in node.models) {
+                            modelsField.append($("<option></option>").val(node.models[d].id).text(node.models[d].name));
+                        }
+                        modelsField.val(node.model);
+
+                        var model = $("#node-input-model").val();
+                        for ( var i = 0; i < node.models.length; i++ ) { 
+                            if ( node.models[i].id == model ) { 
+                                node.labels = node.models[i].labels;
+                                break;
+                            }
+                        }
+                        
+                        $("#node-input-rule-container").editableList('empty');
+                        for (var i=0;i<node.rules.length;i++) {
+                            var rule = node.rules[i];
+                            $("#node-input-rule-container").editableList('addItem',{r:rule,i:i});
+                        }
+                    }
+                }
+            });
+
+            function updateValidity () { 
+                var currentVal = $("#node-input-matchany").val();
+                if ( ( currentVal == "true" && node.matchany == "true" ) || currentVal == "true" ) { 
+                    $(".node-input-rule-index").parent().hide();
+                } else { 
+                    $(".node-input-rule-index").parent().show();
+                }
+            }
+            $("#node-input-matchany").change(updateValidity);
+            updateValidity();
+
+            function resizeRule(rule) {
+                var newWidth = rule.width();
+                var selectField = rule.find("select.rules");
+                var type = selectField.val()||"";
+                var valueField = rule.find(".node-input-rule-value");
+                var selectWidth;
+                if (type.length < 4) {
+                    selectWidth = 60;
+                } else if (type === "regex") {
+                    selectWidth = 147;
+                } else {
+                    selectWidth = 120;
+                }
+                selectField.css("width", selectWidth);
+                valueField.css("width",(newWidth-selectWidth-70));
+            }
+
+            $("#node-input-rule-container").css('min-height','250px').css('min-width','450px').editableList({
+                addItem: function(container,i,opt) {
+                    if (!opt.hasOwnProperty('r')) {
+                        opt.r = {};
+                    }
+                    var rule = opt.r;
+                    
+                    if (!rule.hasOwnProperty('t')) {
+                        rule.t = 'exists';
+                    }
+                    container.css({
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap'
+                    });
+                    
+                    var row0 = $('<div/>',{style:"padding-bottom: 5px;"}).appendTo(container);
+                    
+                    var labelLabel = $('<label for="node-input-model-label' + i + '"><i class="icon-tag"></i> Label</label>').appendTo(row0);
+                    var labelField = $('<select class="modellabel" id="node-input-model-label' + i + '"/>', {style:"width: calc(100% - 100px); margin-left: 5px; text-align: center;"}).appendTo(row0);
+                    labelField.append($("<option></option>")); // blank...
+                    for (var d in node.labels) {
+                        labelField.append($("<option></option>").val(node.labels[d].name).text(node.labels[d].name));
+                    }
+                    labelField.val(rule.lv);
+
+                    var row = $('<div/>', {style:"padding-top: 10px;"}).appendTo(container);
+                    
+                    var selectField = $('<select class="rules"/>',{style:"width:120px; margin-left: 5px; text-align: center;"}).appendTo(row);
+                    var group0 = $('<optgroup/>', { label: "value rules" }).appendTo(selectField);
+                    for (var d in operators) {
+                        if(operators[d].kind === 'V') {
+                            group0.append($("<option></option>").val(operators[d].v).text(/^switch/.test(operators[d].t)?node._(operators[d].t):operators[d].t));
+                        }
+                    }
+                    for (var d in operators) {
+                        if(operators[d].kind === 'O') {
+                            selectField.append($("<option></option>").val(operators[d].v).text(/^switch/.test(operators[d].t)?node._(operators[d].t):operators[d].t));
+                        }
+                    }
+                    
+                    var valueField = $('<input/>',{class:"node-input-rule-value",type:"text",style:"margin-left: 5px;"}).appendTo(row);
+                    valueField.val(rule.v);
+                    
+                    var finalspan = $('<span/>',{style:"float: right;margin-top: 6px;"}).appendTo(row);
+                    finalspan.append(' &#8594; <span class="node-input-rule-index">'+(i+1)+'</span> ');
+                    
+                    selectField.val(rule.t);
+                    selectField.change(function() {
+                        resizeRule(container);
+                        var type = selectField.val();
+                        if (type === "else") {
+                            row0.hide();
+                            valueField.hide();
+                        } else if ( type === "exists" ) { 
+                            row0.show();
+                            valueField.hide();
+                        } else { 
+                            valueField.show();
+                            row0.show();
+                        }
+                    });
+                    selectField.change();
+                    updateValidity();
+                },
+                removeItem: function(opt) {
+                    var rules = $("#node-input-rule-container").editableList('items');
+                    rules.each(function(i) {
+                        $(this).find(".node-input-rule-index").html(i+1);
+                        var data = $(this).data('data');;
+                    });
+                },
+                resizeItem: resizeRule,
+                sortItems: function(rules) {
+                    var rules = $("#node-input-rule-container").editableList('items');
+                    rules.each(function(i) {
+                        $(this).find(".node-input-rule-index").html(i+1);
+                        var data = $(this).data('data');
+                    });
+                },
+                sortable: true,
+                removable: true
+            });
+
+            
+        },
+        oneditsave: function() {
+            var rules = $("#node-input-rule-container").editableList('items');
+            var ruleset;
+            var node = this;
+            node.rules = [];
+            rules.each(function(i) {
+                var ruleData = $(this).data('data');
+                var rule = $(this);
+                var label = rule.find("select.modellabel").val();
+                var type = rule.find("select.rules").val();
+                var r = {t:type, lv: label};
+                r.v = rule.find(".node-input-rule-value").val();
+                node.rules.push(r);
+            });
+
+            var currentVal = $("#node-input-matchany").val();
+            if ( ( currentVal == "true" && node.matchany == "true" ) || currentVal == "true" ) { 
+                $(".node-input-rule-index").parent().hide();
+                node.outputs = 1;
+            } else { 
+                $(".node-input-rule-index").parent().show();
+                node.outputs = node.rules.length;
+            }
+            $("#node-input-outputs").val(node.outputs);
+        },
+        oneditresize: function(size) {
+            var rows = $("#dialog-form>div:not(.node-input-rule-container-row)");
+            var height = size.height;
+            for (var i=0;i<rows.size();i++) {
+                height -= $(rows[i]).outerHeight(true);
+            }
+            var editorRow = $("#dialog-form>div.node-input-rule-container-row");
+            height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
+            $("#node-input-rule-container").editableList('height',height);
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="condition">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+        <input type="hidden" id="node-input-outputs"/>
+    </div>
+    <div class="form-row">
+        <label for="node-input-model"><i class="icon-tag"></i> Model</label>
+        <select id="node-input-model" style="margin-right:5px;">
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-matchany"><i class="icon-tag"></i> Validity</label>
+        <select id="node-input-matchany" style="margin-right:5px;">
+            <option></option>
+            <option value="true">One message if ANY match</option>
+            <option value="false">One message PER match</option>
+        </select>
+    </div>
+    <div class="form-row" style="margin-bottom:0;">
+        <label><i class="fa fa-list"></i> <span data-i18n="change.label.rules"></span></label>
+    </div>
+    <div class="form-row node-input-rule-container-row">
+        <ol id="node-input-rule-container"></ol>
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="condition">
+    <p>A Filament node to branch the flow based on conditions recieved from a prediction service.</p>
+    <h3>Inputs</h3>
+    <p>This node will accept as <code>payload</code> the output of any Filament Engine model output. Based on this input and the configuration defined in the node, this will pass on the same message as output if a match, or matches are found.</p>
+    <h3>Outputs</h3>
+    <p>The original message <code>payload</code> will remain unchanged as a result of this node. </p>
+    <p>Select the model you wish this payload to be compared against when configuring this node. Doing so will expose the labels defined in that model to be used as attributes to match against.</p>
+    <p>The <code>Validity</code> field in the configuration will determine the nature of the output. If set to match ANY, the a single message will be output if any of the conditions defined in the config are true. Alternatively, setting Validity to PER match will configure <code>n</code> outputs if there are <code>n</code> conditions. In this case, a message will be output on the corresponding wire if the condition is met. 
+    </p>
+</script>
