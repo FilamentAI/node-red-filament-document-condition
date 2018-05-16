@@ -1,0 +1,30 @@
+{
+    "name": "node-red-filament-document-condition",
+    "version": "1.0.0",
+    "description": "A convenience node based on the core switch node for conditionally routing messages through a flow based on the results of a Filament Engine text-mining-node.",
+    "main": "condition.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": {
+        "name": "Andy Feltham",
+        "email" : "andy.feltham@filament.ai"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/FilamentAI/node-red-filament-document-condition.git"
+    },
+    "keywords": [
+        "editor",
+        "messaging",
+        "flow",
+        "logic",
+        "condition"
+    ],
+    "node-red": {
+        "nodes": {
+            "condition": "condition.js"
+        }
+    }
+}
