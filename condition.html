@@ -3,9 +3,9 @@
         {v:"exists",t:"exists",kind:'V'},
         {v:"eq",t:"==",kind:'V'},
         {v:"neq",t:"!=",kind:'V'},
-        {v:"cont",t:"switch.rules.cont",kind:'V'},
-        {v:"regex",t:"switch.rules.regex",kind:'V'},
-        {v:"else",t:"switch.rules.else",kind:'O'}
+        {v:"cont",t:"node-red:switch.rules.cont",kind:'V'},
+        {v:"regex",t:"node-red:switch.rules.regex",kind:'V'},
+        {v:"else",t:"node-red:switch.rules.else",kind:'O'}
     ];
     
     RED.nodes.registerType('condition',{
@@ -182,12 +182,12 @@
                     var group0 = $('<optgroup/>', { label: "value rules" }).appendTo(selectField);
                     for (var d in operators) {
                         if(operators[d].kind === 'V') {
-                            group0.append($("<option></option>").val(operators[d].v).text(/^switch/.test(operators[d].t)?node._(operators[d].t):operators[d].t));
+                            group0.append($("<option></option>").val(operators[d].v).text(/^node-red:switch/.test(operators[d].t)?node._(operators[d].t):operators[d].t));
                         }
                     }
                     for (var d in operators) {
                         if(operators[d].kind === 'O') {
-                            selectField.append($("<option></option>").val(operators[d].v).text(/^switch/.test(operators[d].t)?node._(operators[d].t):operators[d].t));
+                            selectField.append($("<option></option>").val(operators[d].v).text(/^node-red:switch/.test(operators[d].t)?node._(operators[d].t):operators[d].t));
                         }
                     }
                     
@@ -294,7 +294,7 @@
         </select>
     </div>
     <div class="form-row" style="margin-bottom:0;">
-        <label><i class="fa fa-list"></i> <span data-i18n="change.label.rules"></span></label>
+        <label><i class="fa fa-list"></i> <span data-i18n="node-red:change.label.rules"></span></label>
     </div>
     <div class="form-row node-input-rule-container-row">
         <ol id="node-input-rule-container"></ol>
