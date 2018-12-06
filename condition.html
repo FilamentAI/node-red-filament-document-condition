@@ -7,23 +7,23 @@
         {v:"regex",t:"node-red:switch.rules.regex",kind:'V'},
         {v:"else",t:"node-red:switch.rules.else",kind:'O'}
     ];
-    
+
     RED.nodes.registerType('condition',{
         category: 'function',
         color: '#ac5ba4',
         defaults: {
             name: {value:""},
-            matchany : { value : undefined, required : true, validate : function (v) { 
+            matchany : { value : undefined, required : true, validate : function (v) {
                 return v != null;
             } },
-            model : { value : undefined, required: true, validate : function (v) { 
+            model : { value : undefined, required: true, validate : function (v) {
                 return v != null && v != "";
             } }, // the current model to get labels from
-            
-            rules: { 
+
+            rules: {
                 value: [
                     {
-                        t:"exists", 
+                        t:"exists",
                         v:""
                     }
                 ]
@@ -43,54 +43,50 @@
         },
         oneditprepare: function() {
             var node = this;
-            
+
             node.rulesBackup = JSON.parse(JSON.stringify(node.rules));
-            
+
             var modelsField = $("#node-input-model");
             modelsField.empty();
-            
-            modelsField.change( function () { 
-                if ( node.model != modelsField.val() && modelsField.val() != null ) { 
+
+            modelsField.change( function () {
+                if ( node.model != modelsField.val() && modelsField.val() != null ) {
                     node.rules = [ // reset the rules...
                             {
-                                t:"exists", 
-                                v:"", 
+                                t:"exists",
+                                v:"",
                                 vt:"str"
                             }
                         ];
-                } else { 
+                } else {
                     node.rules = JSON.parse(JSON.stringify(node.rulesBackup));
                 }
-                
-                if ( node.models != null ) { 
-                    for ( var i = 0; i < node.models.length; i++ ) { 
-                        if ( node.models[i].id == modelsField.val() ) { 
+
+                if ( node.models != null ) {
+                    for ( var i = 0; i < node.models.length; i++ ) {
+                        if ( node.models[i].id == modelsField.val() ) {
                             node.labels = node.models[i].labels;
                             break;
                         }
-                    }   
+                    }
                 }
-                
+
                 $("#node-input-rule-container").editableList('empty');
                 for (var i=0;i<node.rules.length;i++) {
                     var rule = node.rules[i];
                     $("#node-input-rule-container").editableList('addItem',{r:rule,i:i});
                 }
             } );
-            
+
             var publishedModelURL = "";
-            
-            try { 
-                const workspace = window.location.href.split('/workspaces/')[1].split('/')[0];
-                const isLocal = (window.location.href.indexOf("localhost") != -1);
-                const backendBaseURL = isLocal ? window.location.protocol + "//" + window.location.hostname + ":8080/core/rest" 
-                                                : window.location.protocol + "//rest." + window.location.hostname + "/core/rest";
-            
-                publishedModelURL = `${backendBaseURL}/workspaces/${workspace}/trained-models?published=true`;
-            } catch ( error ) { 
-                publishedModelURL = "http://rest.staging.engine.filament.ai/core/rest/workspaces/18/trained-models?published=true";
-            }
-            
+
+            const workspace = window.location.href.split('/workspaces/')[1].split('/')[0];
+            const isLocal = (window.location.href.indexOf("localhost") != -1);
+            const backendBaseURL = isLocal ? window.location.protocol + "//" + window.location.hostname + ":8080/core/rest"
+                                            : window.location.protocol + "//rest." + window.location.hostname + "/core/rest";
+
+            publishedModelURL = `${backendBaseURL}/workspaces/${workspace}/models?published=true`;
+
             $.ajax({
                 url: publishedModelURL,
                 headers: { Authorization: localStorage.getItem('token') },
@@ -99,7 +95,7 @@
                 success: function(resp, textStatus, xhr) {
                     if (xhr.status == 200) {
                         node.models = resp;
-                        
+
                         modelsField.append($("<option></option>")); // blank...
                         for (var d in node.models) {
                             modelsField.append($("<option></option>").val(node.models[d].id).text(node.models[d].name));
@@ -107,13 +103,13 @@
                         modelsField.val(node.model);
 
                         var model = $("#node-input-model").val();
-                        for ( var i = 0; i < node.models.length; i++ ) { 
-                            if ( node.models[i].id == model ) { 
+                        for ( var i = 0; i < node.models.length; i++ ) {
+                            if ( node.models[i].id == model ) {
                                 node.labels = node.models[i].labels;
                                 break;
                             }
                         }
-                        
+
                         $("#node-input-rule-container").editableList('empty');
                         for (var i=0;i<node.rules.length;i++) {
                             var rule = node.rules[i];
@@ -123,11 +119,11 @@
                 }
             });
 
-            function updateValidity () { 
+            function updateValidity () {
                 var currentVal = $("#node-input-matchany").val();
-                if ( ( currentVal == "true" && node.matchany == "true" ) || currentVal == "true" ) { 
+                if ( ( currentVal == "true" && node.matchany == "true" ) || currentVal == "true" ) {
                     $(".node-input-rule-index").parent().hide();
-                } else { 
+                } else {
                     $(".node-input-rule-index").parent().show();
                 }
             }
@@ -157,7 +153,7 @@
                         opt.r = {};
                     }
                     var rule = opt.r;
-                    
+
                     if (!rule.hasOwnProperty('t')) {
                         rule.t = 'exists';
                     }
@@ -165,9 +161,9 @@
                         overflow: 'hidden',
                         whiteSpace: 'nowrap'
                     });
-                    
+
                     var row0 = $('<div/>',{style:"padding-bottom: 5px;"}).appendTo(container);
-                    
+
                     var labelLabel = $('<label for="node-input-model-label' + i + '"><i class="icon-tag"></i> Label</label>').appendTo(row0);
                     var labelField = $('<select class="modellabel" id="node-input-model-label' + i + '"/>', {style:"width: calc(100% - 100px); margin-left: 5px; text-align: center;"}).appendTo(row0);
                     labelField.append($("<option></option>")); // blank...
@@ -177,7 +173,7 @@
                     labelField.val(rule.lv);
 
                     var row = $('<div/>', {style:"padding-top: 10px;"}).appendTo(container);
-                    
+
                     var selectField = $('<select class="rules"/>',{style:"width:120px; margin-left: 5px; text-align: center;"}).appendTo(row);
                     var group0 = $('<optgroup/>', { label: "value rules" }).appendTo(selectField);
                     for (var d in operators) {
@@ -190,13 +186,13 @@
                             selectField.append($("<option></option>").val(operators[d].v).text(/^node-red:switch/.test(operators[d].t)?node._(operators[d].t):operators[d].t));
                         }
                     }
-                    
+
                     var valueField = $('<input/>',{class:"node-input-rule-value",type:"text",style:"margin-left: 5px;"}).appendTo(row);
                     valueField.val(rule.v);
-                    
+
                     var finalspan = $('<span/>',{style:"float: right;margin-top: 6px;"}).appendTo(row);
                     finalspan.append(' &#8594; <span class="node-input-rule-index">'+(i+1)+'</span> ');
-                    
+
                     selectField.val(rule.t);
                     selectField.change(function() {
                         resizeRule(container);
@@ -204,10 +200,10 @@
                         if (type === "else") {
                             row0.hide();
                             valueField.hide();
-                        } else if ( type === "exists" ) { 
+                        } else if ( type === "exists" ) {
                             row0.show();
                             valueField.hide();
-                        } else { 
+                        } else {
                             valueField.show();
                             row0.show();
                         }
@@ -234,7 +230,7 @@
                 removable: true
             });
 
-            
+
         },
         oneditsave: function() {
             var rules = $("#node-input-rule-container").editableList('items');
@@ -252,10 +248,10 @@
             });
 
             var currentVal = $("#node-input-matchany").val();
-            if ( ( currentVal == "true" && node.matchany == "true" ) || currentVal == "true" ) { 
+            if ( ( currentVal == "true" && node.matchany == "true" ) || currentVal == "true" ) {
                 $(".node-input-rule-index").parent().hide();
                 node.outputs = 1;
-            } else { 
+            } else {
                 $(".node-input-rule-index").parent().show();
                 node.outputs = node.rules.length;
             }
@@ -308,6 +304,6 @@
     <h3>Outputs</h3>
     <p>The original message <code>payload</code> will remain unchanged as a result of this node. </p>
     <p>Select the model you wish this payload to be compared against when configuring this node. Doing so will expose the labels defined in that model to be used as attributes to match against.</p>
-    <p>The <code>Validity</code> field in the configuration will determine the nature of the output. If set to match ANY, the a single message will be output if any of the conditions defined in the config are true. Alternatively, setting Validity to PER match will configure <code>n</code> outputs if there are <code>n</code> conditions. In this case, a message will be output on the corresponding wire if the condition is met. 
+    <p>The <code>Validity</code> field in the configuration will determine the nature of the output. If set to match ANY, the a single message will be output if any of the conditions defined in the config are true. Alternatively, setting Validity to PER match will configure <code>n</code> outputs if there are <code>n</code> conditions. In this case, a message will be output on the corresponding wire if the condition is met.
     </p>
 </script>
