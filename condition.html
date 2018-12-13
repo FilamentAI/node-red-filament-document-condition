@@ -95,10 +95,8 @@
                         for (var d in node.models) {
                             modelsField.append($("<option></option>").val(node.models[d].id).text(node.models[d].name));
                         }
-                        modelsField.val(node.model);
-
-                        var model = $("#node-input-model").val();
-                        getClasses(model)
+                        modelsField.val(node.models[0].id);
+                        getClasses(node.models[0].id);
 
                         $("#node-input-rule-container").editableList('empty');
                         for (var i=0;i<node.rules.length;i++) {
@@ -110,26 +108,28 @@
             });
 
             function getClasses (modelId) {
-                var publishedModelURL = "";
+                if (modelId) {
+                    var publishedModelURL = "";
 
-                const workspace = window.location.href.split('/workspaces/')[1].split('/')[0];
-                const isLocal = (window.location.href.indexOf("localhost") != -1);
-                const backendBaseURL = isLocal ? window.location.protocol + "//" + window.location.hostname + ":8080/core/rest"
-                                                : window.location.protocol + "//rest-" + window.location.hostname + "/core/rest";
+                    const workspace = window.location.href.split('/workspaces/')[1].split('/')[0];
+                    const isLocal = (window.location.href.indexOf("localhost") != -1);
+                    const backendBaseURL = isLocal ? window.location.protocol + "//" + window.location.hostname + ":8080/core/rest"
+                                                    : window.location.protocol + "//rest-" + window.location.hostname + "/core/rest";
 
-                publishedModelURL = `${backendBaseURL}/workspaces/${workspace}/models/` + modelId + "/classes";
+                    publishedModelURL = `${backendBaseURL}/models/` + modelId + "/classes";
 
-                $.ajax({
-                    url: publishedModelURL,
-                    headers: { Authorization: localStorage.getItem('token') },
-                    type: "GET",
-                    dataType: 'json',
-                    success: function(resp, textStatus, xhr) {
-                        if (xhr.status == 200) {
-                            node.labels = resp;
+                    $.ajax({
+                        url: publishedModelURL,
+                        headers: { Authorization: localStorage.getItem('token') },
+                        type: "GET",
+                        dataType: 'json',
+                        success: function(resp, textStatus, xhr) {
+                            if (xhr.status == 200) {
+                                node.labels = resp;
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
 
             function updateValidity () {
