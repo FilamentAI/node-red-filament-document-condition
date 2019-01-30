@@ -63,9 +63,6 @@ module.exports = function(RED) {
             } else { 
                 return false;
             }
-        },
-        'else': function (a) {
-            return a === true;
         }
     };
     
@@ -99,7 +96,33 @@ module.exports = function(RED) {
                 
                 }
                 
-                if (operators[rule.t](lv,v1,v2)) {
+                if (rule.t === 'else') {
+                    if (matchany === 'true') {
+                      // when we are in the mode where we send a 
+                      // message if any rule matches: if we
+                      // encounter an 'else' rule, then we
+                      // will send a message regardless of other 
+                      // rules
+                      onward[0] = msg;
+                      break;
+                    } else {
+                      // when we are in the mode where we send a
+                      // message for each matching rule: if we
+                      // encounter an 'else' rule and have already
+                      // matched a rule then we don't send a message;
+                      // however, if we haven't matched a rule yet
+                      // then we should send a message.
+                      if (foundMatch) {
+                        onward[i] = null;
+                        // if there are more rules after the else,
+                        // then do what the switch node does and
+                        // reset the match status
+                        foundMatch = false;
+                      } else {
+                        onward[i] = msg;
+                      }
+                    }
+                } else if (operators[rule.t](lv,v1,v2)) {
                     // have a match... 
                     foundMatch = true;
                     if ( matchany == "true" ) { 
@@ -110,21 +133,11 @@ module.exports = function(RED) {
                         // else place it in the right part of the onward array...
                         onward[i] = msg;
                     }
-                } else { 
+                } else {
                     if ( matchany == "false" ) { 
                         // set the correct place in the return array to be null... 
                         onward[i] = null;
                     }  
-                }
-                
-                if ( rule.t == "else" ) { 
-                    // in the else case we set it anyway... 
-                    if ( matchany == "true" ) {
-                        onward[0] = msg;
-                        break;
-                    } else { 
-                        onward[i] = msg;
-                    }
                 }
             }
             
