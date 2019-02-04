@@ -62,16 +62,16 @@
                     node.rules = JSON.parse(JSON.stringify(node.rulesBackup));
                 }
 
-                if ( node.models != null ) {
-                    getClasses(modelsField.val())
-                }
-
                 $("#node-input-rule-container").editableList('empty');
-                for (var i=0;i<node.rules.length;i++) {
-                    var rule = node.rules[i];
-                    $("#node-input-rule-container").editableList('addItem',{r:rule,i:i});
+                if ( node.models != null ) {
+                    getClasses(modelsField.val(), function () {
+                        for (var i=0;i<node.rules.length;i++) {
+                            var rule = node.rules[i];
+                            $("#node-input-rule-container").editableList('addItem',{r:rule,i:i});
+                        }
+                    });
                 }
-            } );
+            });
 
             var publishedModelURL = "";
 
@@ -95,19 +95,19 @@
                         for (var d in node.models) {
                             modelsField.append($("<option></option>").val(node.models[d].id).text(node.models[d].name));
                         }
-                        modelsField.val(node.models[0].id);
-                        getClasses(node.models[0].id);
-
+                        modelsField.val(node.model || node.models[0].id);
                         $("#node-input-rule-container").editableList('empty');
-                        for (var i=0;i<node.rules.length;i++) {
-                            var rule = node.rules[i];
-                            $("#node-input-rule-container").editableList('addItem',{r:rule,i:i});
-                        }
+                        getClasses(modelsField.val(), function () {
+                            for (var i=0;i<node.rules.length;i++) {
+                                var rule = node.rules[i];
+                                $("#node-input-rule-container").editableList('addItem',{r:rule,i:i});
+                            }
+                        });
                     }
                 }
             });
 
-            function getClasses (modelId) {
+            function getClasses (modelId, thenFn) {
                 if (modelId) {
                     var publishedModelURL = "";
 
@@ -126,6 +126,7 @@
                         success: function(resp, textStatus, xhr) {
                             if (xhr.status == 200) {
                                 node.labels = resp;
+                                thenFn();
                             }
                         }
                     });
@@ -244,6 +245,10 @@
             });
 
 
+        },
+        oneditcancel: function() {
+            var node = this;
+            node.rules = JSON.parse(JSON.stringify(node.rulesBackup));
         },
         oneditsave: function() {
             var rules = $("#node-input-rule-container").editableList('items');
