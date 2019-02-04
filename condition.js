@@ -2,7 +2,7 @@ module.exports = function(RED) {
     var operators = {
         'matchLabel' : function ( lv, a, b ) { 
             for ( var i = 0; i < b.length; i++ ) { 
-                if ( b[i].label == lv ) { 
+                if ( b[i].output.find(o => o.class == lv) ) {
                     return b[i];
                     break;
                 }
@@ -19,7 +19,7 @@ module.exports = function(RED) {
         'eq': function (lv, a, b) {
             var opMatch = operators.matchLabel(lv,a,b);
             if ( opMatch != null ) { 
-                if ( opMatch.content == a ) { 
+                if ( opMatch.input == a ) {
                     return true;
                 } else { 
                     return false;
